@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using ZeroCompression.Core.Buffers;
+using ZeroSecurity.Common;
 
 namespace ZeroCompression.Core.Crypto
 {
@@ -41,7 +42,7 @@ namespace ZeroCompression.Core.Crypto
 
             byte[] key = DeriveKey(password, salt);
             byte[] expected = MakeVerifier(key, salt);
-            if (!CryptographicOperations.FixedTimeEquals(verifier, expected))
+            if (!CryptoMemory.ConstantTimeEquals(verifier, expected))
                 throw new InvalidDataException("Incorrect password.");
 
             return new GcmReadStream(source, key);
@@ -62,7 +63,7 @@ namespace ZeroCompression.Core.Crypto
                 byte[] verifier = ReadExactly(source, VerifierSize);
                 byte[] key = DeriveKey(password, salt);
                 byte[] expected = MakeVerifier(key, salt);
-                return CryptographicOperations.FixedTimeEquals(verifier, expected);
+                return CryptoMemory.ConstantTimeEquals(verifier, expected);
             }
             finally
             {
