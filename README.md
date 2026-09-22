@@ -1,5 +1,7 @@
 # 🗜️ ZeroCompression — High-Performance Sovereign Compression Subsystem
 
+[![ZeroPlatform Tier](https://img.shields.io/badge/ZeroPlatform-Tier%201%20(Compute%20%26%20System)-4f46e5.svg)](https://github.com/kzxl/ZeroPlatform)
+
 Part of the **ZeroUniverse** industrial computing ecosystem.
 
 ## 📖 Overview
