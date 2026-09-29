@@ -1,9 +1,12 @@
 using System;
+using System.Runtime.CompilerServices;
+using ZeroPrimitives.Cryptography;
 
 namespace ZeroCompression.Core.Hashing
 {
     /// <summary>
     /// Standard CRC-32 (IEEE 802.3, polynomial 0xEDB88320) with Span and streaming support.
+    /// Employs 4-way loop unrolled acceleration aligned with <see cref="FastCrc.Crc32"/>.
     /// </summary>
     public sealed class Crc32
     {
@@ -24,11 +27,31 @@ namespace ZeroCompression.Core.Hashing
             return table;
         }
 
-        public void Append(ReadOnlySpan<byte> data)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe void Append(ReadOnlySpan<byte> data)
         {
+            if (data.IsEmpty) return;
+
             uint crc = _crc;
-            foreach (byte b in data)
-                crc = Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
+            fixed (byte* p = data)
+            {
+                byte* ptr = p;
+                byte* end = p + data.Length;
+
+                while (ptr + 4 <= end)
+                {
+                    crc = (crc >> 8) ^ Table[(crc ^ ptr[0]) & 0xFF];
+                    crc = (crc >> 8) ^ Table[(crc ^ ptr[1]) & 0xFF];
+                    crc = (crc >> 8) ^ Table[(crc ^ ptr[2]) & 0xFF];
+                    crc = (crc >> 8) ^ Table[(crc ^ ptr[3]) & 0xFF];
+                    ptr += 4;
+                }
+
+                while (ptr < end)
+                {
+                    crc = (crc >> 8) ^ Table[(crc ^ *ptr++) & 0xFF];
+                }
+            }
             _crc = crc;
         }
 
@@ -36,11 +59,7 @@ namespace ZeroCompression.Core.Hashing
 
         public void Reset() => _crc = 0xFFFFFFFFu;
 
-        public static uint Compute(ReadOnlySpan<byte> data)
-        {
-            var c = new Crc32();
-            c.Append(data);
-            return c.Value;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint Compute(ReadOnlySpan<byte> data) => FastCrc.Crc32(data);
     }
 }
